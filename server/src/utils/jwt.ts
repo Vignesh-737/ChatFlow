@@ -18,8 +18,7 @@ export const generateToken=(userId: string)=>{
 
 export const verifyToken=(token:string)=>{
     try {
-       const decoded = jwt.verify(token,process.env.JWT_SECRET!)
-        return decoded
+       return jwt.verify(token,process.env.JWT_SECRET!) as {userId : string}
     } catch (error) {
         console.log(error)
         throw error;
