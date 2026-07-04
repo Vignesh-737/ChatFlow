@@ -94,3 +94,45 @@ export const createConversation = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getConversations = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const myUserId = req.user.userId;
+
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        members: {
+          some: {
+            userId: myUserId,
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return res.status(200).json(conversations);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
