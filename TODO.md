@@ -1,4 +1,4 @@
-# ChatFlow TODO
+# ChatFlow : a messenger app
 
 ## Backend
 - [x] Authentication
