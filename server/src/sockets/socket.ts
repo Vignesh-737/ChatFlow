@@ -11,17 +11,21 @@ export const initializeSocket = (httpServer: HttpServer) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log(`User Connected: ${socket.id}`);
+
+    socket.on("hello", (data) => {
+  console.log("Received:", data);
+});
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+      console.log(`User Disconnected: ${socket.id}`);
     });
   });
 };
 
 export const getIO = () => {
   if (!io) {
-    throw new Error("Socket.IO has not been initialized.");
+    throw new Error("Socket.IO not initialized");
   }
 
   return io;
