@@ -2,40 +2,48 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-const loginSchema = z.object({
+const registerSchema = z.object({
+  username: z.string().min(3, "Min 3 chars"),
   email: z.string().email("Invalid email"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(8, "Min 8 chars"),
+  confirmPassword: z.string(),
   rememberMe: z.boolean().default(false),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export function LoginForm() {
+export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      username: "",
       email: "",
       password: "",
+      confirmPassword: "",
       rememberMe: false,
     }
   });
 
   const rememberMe = watch("rememberMe");
 
-  const onSubmit = async (data: LoginFormValues) => {
-    console.log("Login data:", data);
+  const onSubmit = async (data: RegisterFormValues) => {
+    console.log("Registration data:", data);
   };
 
   return (
@@ -49,12 +57,28 @@ export function LoginForm() {
 
       {/* Header */}
       <div className="mb-5 text-center sm:text-left">
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">Welcome back</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">Create account</h2>
       </div>
 
       {/* Form */}
       <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
         
+        {/* Username */}
+        <div className="flex flex-col relative">
+          <div className="relative group h-11 sm:h-12">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <User className={`h-4 w-4 transition-colors duration-300 ${errors.username ? 'text-red-400' : 'text-white/40 group-focus-within:text-indigo-400'}`} />
+            </div>
+            <input
+              type="text"
+              placeholder="Username"
+              {...register("username")}
+              className={`w-full h-full bg-white/[0.03] hover:bg-white/[0.05] focus:bg-white/[0.07] border ${errors.username ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-white/[0.08] focus:border-indigo-500/50 focus:ring-indigo-500/20'} rounded-2xl pl-11 pr-4 text-white placeholder-white/50 focus:outline-none focus:ring-4 transition-all text-[13px] [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]`}
+            />
+          </div>
+          {errors.username && <span className="absolute -bottom-3.5 left-2 text-[10px] text-red-400">{errors.username.message}</span>}
+        </div>
+
         {/* Email */}
         <div className="flex flex-col relative">
           <div className="relative group h-11 sm:h-12">
@@ -94,7 +118,30 @@ export function LoginForm() {
           {errors.password && <span className="absolute -bottom-3.5 left-2 text-[10px] text-red-400">{errors.password.message}</span>}
         </div>
 
-        {/* Options */}
+        {/* Confirm Password */}
+        <div className="flex flex-col relative">
+          <div className="relative group h-11 sm:h-12">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Lock className={`h-4 w-4 transition-colors duration-300 ${errors.confirmPassword ? 'text-red-400' : 'text-white/40 group-focus-within:text-indigo-400'}`} />
+            </div>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm Password"
+              {...register("confirmPassword")}
+              className={`w-full h-full bg-white/[0.03] hover:bg-white/[0.05] focus:bg-white/[0.07] border ${errors.confirmPassword ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : 'border-white/[0.08] focus:border-indigo-500/50 focus:ring-indigo-500/20'} rounded-2xl pl-11 pr-11 text-white placeholder-white/50 focus:outline-none focus:ring-4 transition-all text-[13px] [&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s]`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-white transition-colors"
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.confirmPassword && <span className="absolute -bottom-3.5 left-2 text-[10px] text-red-400">{errors.confirmPassword.message}</span>}
+        </div>
+
+        {/* Remember Me */}
         <div className="pt-2 flex items-center justify-between">
           <label className="flex items-center space-x-2.5 cursor-pointer group">
             <div className="relative flex items-center justify-center w-4 h-4 rounded-[5px] border border-white/10 bg-white/5 group-hover:border-white/20 transition-colors overflow-hidden">
@@ -118,10 +165,6 @@ export function LoginForm() {
             </div>
             <span className="text-[11px] sm:text-xs text-white/60 group-hover:text-white/90 transition-colors">Remember me</span>
           </label>
-
-          <a href="#" className="text-[11px] sm:text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium">
-            Forgot password?
-          </a>
         </div>
 
         {/* Submit Button */}
@@ -133,7 +176,7 @@ export function LoginForm() {
           className="w-full h-11 sm:h-12 relative group overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_auto] hover:bg-right flex items-center justify-center space-x-2 text-white text-[13px] font-semibold shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] transition-all duration-500 disabled:opacity-70 disabled:cursor-not-allowed mt-1"
         >
           <div className="absolute inset-x-0 top-0 h-px bg-white/40" />
-          <span className="relative z-10">{isSubmitting ? "Signing in..." : "Sign In"}</span>
+          <span className="relative z-10">{isSubmitting ? "Creating..." : "Create Account"}</span>
           <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
         </motion.button>
       </form>
@@ -158,9 +201,9 @@ export function LoginForm() {
 
       {/* Footer */}
       <p className="mt-5 sm:mt-6 text-center text-[11px] sm:text-[12px] text-white/60">
-        Don't have an account?{" "}
-        <a href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors font-semibold">
-          Create one
+        Already have an account?{" "}
+        <a href="/login" className="text-indigo-400 hover:text-indigo-300 transition-colors font-semibold">
+          Login
         </a>
       </p>
     </div>
