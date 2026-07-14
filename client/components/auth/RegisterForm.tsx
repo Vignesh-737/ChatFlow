@@ -6,6 +6,9 @@ import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
+import axios from "axios"
+
 
 const registerSchema = z.object({
   username: z.string().min(3, "Min 3 chars"),
@@ -23,6 +26,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
+
 
   const {
     register,
@@ -43,7 +48,19 @@ export function RegisterForm() {
   const rememberMe = watch("rememberMe");
 
   const onSubmit = async (data: RegisterFormValues) => {
-    console.log("Registration data:", data);
+    try {
+      const resData= await axios.post(`${process.env.NEXT_PUBLIC_REGISTER_URL}`,{
+        username:data.username,
+        email:data.email,
+        password:data.password
+      })
+      
+      router.push("/login");
+      
+    } catch (error) {
+      console.error(error)
+    }
+
   };
 
   return (

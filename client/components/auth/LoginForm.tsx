@@ -6,6 +6,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import axios from "axios"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -35,7 +36,23 @@ export function LoginForm() {
   const rememberMe = watch("rememberMe");
 
   const onSubmit = async (data: LoginFormValues) => {
-    console.log("Login data:", data);
+    try {
+      const resData= await axios.post(`${process.env.NEXT_PUBLIC_LOGIN_URL}`,{
+        email:data.email,
+        password:data.password
+      })
+      
+      const token = resData.data.token;
+
+      if (!token) {
+        throw new Error("Token not received");
+      }
+
+      localStorage.setItem("token",resData.data.token)
+      
+    } catch (error) {
+      console.error(error)
+    }
   };
 
   return (
