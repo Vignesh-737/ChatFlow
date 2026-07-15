@@ -59,11 +59,49 @@ export const login =async(req:Request,res:Response)=>{
         if(!user) return res.status(404).json({message:"User not found, Please register"}); 
         const checkPass= await bcrypt.compare(password,user.password)
         if(!checkPass) return res.status(401).json({message:"Invalid Password"}); 
-        let token = generateToken(user.id)
-        return res.status(200).json({token:token,message:"Login Successfull"})
+        const token = generateToken(user.id);
+        res.cookie("accessToken", token, {
+        httpOnly: true,
+        secure: false, // true in production with HTTPS
+        sameSite: "lax", // use "none" if frontend/backend are on different domains with HTTPS
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        });
+
+        return res.status(200).json({
+        message: "Login Successful",
+        });
 
     } catch (error) {
         console.log(error)
         return res.status(500).json({message:"Something went wrong"}); 
     }
 }
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: req.user.userId,
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};

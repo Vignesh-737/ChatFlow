@@ -4,12 +4,19 @@ import userRoutes from "./routes/user.routes.js"
 import conversationRoutes from "./routes/conversation.routes.js"
 import messageRoutes from "./routes/message.routes.js";
 import cors from "cors"
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
-app.use(cors())
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
 app.use("/api/auth",authRoutes);
 
