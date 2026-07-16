@@ -6,17 +6,21 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import axios from "axios"
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+
+
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().default(false),
+  rememberMe: z.boolean(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -37,19 +41,14 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      const resData= await axios.post(`${process.env.NEXT_PUBLIC_LOGIN_URL}`,{
-        email:data.email,
-        password:data.password
-      })
-      
-      const token = resData.data.token;
+      await api.post("auth/login",
+        {
+          email: data.email,
+          password: data.password,
+        },
+      );
+    router.push("/chat");
 
-      if (!token) {
-        throw new Error("Token not received");
-      }
-
-      localStorage.setItem("token",resData.data.token)
-      
     } catch (error) {
       console.error(error)
     }

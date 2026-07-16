@@ -1,18 +1,15 @@
 /* app/globals.css */
 @import "tailwindcss";
 
+/* Enable class-based dark mode for next-themes in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-inter);
 }
 
 @layer base {
-  :root {
-    --background: #05010d;
-    --foreground: #ffffff;
-  }
   body {
-    background-color: var(--background);
-    color: var(--foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

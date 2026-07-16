@@ -105,3 +105,24 @@ export const getMe = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+    });
+
+    return res.status(200).json({
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};

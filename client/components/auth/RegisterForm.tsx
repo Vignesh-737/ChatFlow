@@ -15,7 +15,7 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(8, "Min 8 chars"),
   confirmPassword: z.string(),
-  rememberMe: z.boolean().default(false),
+  rememberMe: z.boolean(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

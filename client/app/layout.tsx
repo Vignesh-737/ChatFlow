@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -16,9 +17,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans antialiased bg-[#05010d] text-white min-h-screen selection:bg-indigo-500/30`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased bg-zinc-50 dark:bg-[#05010d] text-zinc-900 dark:text-white min-h-screen selection:bg-indigo-500/30`}>
+          <AuthProvider>
+              {children}
+          </AuthProvider>
       </body>
     </html>
   );
