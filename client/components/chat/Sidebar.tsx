@@ -32,9 +32,9 @@ export function Sidebar() {
     <div className="w-20 lg:w-64 h-full flex flex-col justify-between p-4 border-r border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/20 backdrop-blur-3xl z-20 transition-all duration-300">
       <div className="flex flex-col space-y-8">
         {/* Logo */}
-        <div className="flex items-center justify-center lg:justify-start px-2 mt-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)] shrink-0">
-            <MessageCircle className="w-5 h-5 text-white" />
+        <div className="flex rounded-full items-center justify-center lg:justify-start px-2 mt-2">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)] shrink-0">
+            <img src="./Logo.png" alt="" />
           </div>
           <span className="hidden lg:block ml-3 font-bold text-xl tracking-tight text-zinc-900 dark:text-white">ChatFlow</span>
         </div>
@@ -69,9 +69,9 @@ export function Sidebar() {
           <span className="hidden lg:block ml-3 font-medium">Settings</span>
         </button>
 
-        <button className="flex items-center justify-center lg:justify-start p-3 rounded-2xl text-red-500/80 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors group">
+        <button className="flex items-center justify-center lg:justify-start p-3 rounded-2xl text-red-500/80 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors group" onClick={()=>Logout()}>
           <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-          <span className="hidden lg:block ml-3 font-medium" onClick={()=>Logout()}>Logout</span>
+          <span className="hidden lg:block ml-3 font-medium">Logout</span>
         </button>
         
         <div className="flex items-center justify-center lg:justify-start p-2">

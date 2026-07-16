@@ -41,7 +41,7 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      await api.post("auth/login",
+      await api.post("/auth/login",
         {
           email: data.email,
           password: data.password,

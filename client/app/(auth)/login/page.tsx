@@ -2,7 +2,6 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {

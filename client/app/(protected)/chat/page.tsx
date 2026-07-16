@@ -1,4 +1,4 @@
-// app/chat/page.tsx
+// app/(protected)/chat/page.tsx
 "use client";
 
 import React, { useState } from "react";
