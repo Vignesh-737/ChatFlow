@@ -11,6 +11,8 @@ import { api } from "@/lib/api";
 
 
 
+import { toast } from "sonner";
+
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
@@ -47,10 +49,12 @@ export function LoginForm() {
           password: data.password,
         },
       );
-    router.push("/chat");
-
+      router.push("/chat");
     } catch (error) {
-      console.error(error)
+      console.error(error);
+      toast.error("Login Failed", {
+        description: "The server is currently offline or busy. Please try again later.",
+      });
     }
   };
 

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import axios from "axios"
+import { toast } from "sonner";
 
 
 const registerSchema = z.object({
@@ -58,7 +59,10 @@ export function RegisterForm() {
       router.push("/login");
       
     } catch (error) {
-      console.error(error)
+      console.error(error);
+      toast.error("Registration Failed", {
+        description: "The server is currently offline or busy. Please try again later.",
+      });
     }
 
   };
