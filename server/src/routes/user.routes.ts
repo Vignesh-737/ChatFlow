@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { getMe } from "../controllers/user.controller.js";
+import { getAllUsers } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
 
-//test routed
-router.get("/me",authMiddleware,getMe)
+router.get("/",authMiddleware,getAllUsers)
+
 
 export default router;
