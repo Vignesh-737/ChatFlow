@@ -50,11 +50,20 @@ export function LoginForm() {
         },
       );
       router.push("/chat");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Login Failed", {
-        description: "The server is currently offline or busy. Please try again later.",
-      });
+      const status = error?.response?.status;
+      const serverMsg = error?.response?.data?.message;
+
+      if (status === 401 || status === 404) {
+        toast.error("Login Failed", {
+          description: serverMsg || "Invalid email or password.",
+        });
+      } else {
+        toast.error("Login Failed", {
+          description: "The server is currently offline or busy. Please try again later.",
+        });
+      }
     }
   };
 
