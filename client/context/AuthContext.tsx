@@ -24,11 +24,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,10 +40,7 @@ export function AuthProvider({
   };
 
   const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {}
-
+    await api.post("/auth/logout");
     setUser(null);
   };
 
@@ -57,12 +50,7 @@ export function AuthProvider({
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        fetchUser,
-        logout,
-      }}
+      value={{ user, loading, fetchUser, logout }}
     >
       {children}
     </AuthContext.Provider>
@@ -73,9 +61,7 @@ export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
+    throw new Error("useAuth must be used within AuthProvider");
   }
 
   return context;

@@ -1,19 +1,51 @@
 // app/(protected)/chat/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProfilePanel } from "@/components/chat/ProfilePanel";
-import { mockConversations, currentUser } from "@/data/mock";
+import { api } from "@/lib/api";
+import { Conversation } from "@/types/conversation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ChatPage() {
+  const { user } = useAuth();
+
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const activeChat = mockConversations.find(c => c.id === activeChatId) || null;
-  const activeUser = activeChat?.participants.find(p => p.id !== currentUser.id) || null;
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const res = await api.get("/conversations");
+        setConversations(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConversations();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  const activeChat =
+    conversations.find((c) => c.id === activeChatId) ?? null;
+
+  const activeUser =
+    activeChat?.members.find((m) => m.user.id !== user?.id)?.user ?? null;
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
@@ -39,7 +71,7 @@ export default function ChatPage() {
 
         {/* Conversation List */}
         <div className={`h-full w-full md:w-[320px] lg:w-[360px] xl:w-[400px] shrink-0 ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
-          <ConversationList activeId={activeChatId} onSelect={handleSelectChat} />
+           <ConversationList conversations={conversations} activeId={activeChatId} onSelect={handleSelectChat}/>
         </div>
 
         {/* Main Chat Window */}

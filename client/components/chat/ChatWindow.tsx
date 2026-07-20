@@ -3,8 +3,8 @@
 
 import React from "react";
 import { Phone, Video, Search, MoreVertical, Paperclip, Send, Smile, ChevronLeft, MessageCircle } from "lucide-react";
-import { Conversation } from "../../types";
-import { currentUser } from "../../data/mock";
+import { Conversation } from "@/types/conversation";
+import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 
 interface ChatWindowProps {
@@ -14,6 +14,8 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
+  const { user } = useAuth();
+  const messages = chat.messages ?? [];
   if (!chat) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-50/50 dark:bg-transparent">
@@ -27,8 +29,14 @@ export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
       </div>
     );
   }
+  
+    const otherUser =
+      chat.members.find((m) => m.user.id !== user?.id)?.user ??
+      chat.members[0]?.user;
 
-  const otherUser = chat.participants.find(p => p.id !== currentUser.id) || chat.participants[0];
+    if (!otherUser) {
+      return null;
+    }
 
   return (
     <div className="w-full h-full flex flex-col bg-zinc-50 dark:bg-transparent relative z-0">
@@ -41,14 +49,14 @@ export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
           
           <button onClick={onToggleProfile} className="flex items-center text-left hover:bg-black/5 dark:hover:bg-white/5 p-2 -ml-2 rounded-2xl transition-colors">
             <div className="relative shrink-0">
-              <img src={otherUser.avatar} alt={otherUser.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
-              {otherUser.status === 'online' && (
-                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
-              )}
+              <img src={"https://ui-avatars.com/api/?name=" + otherUser.username} alt={otherUser.username} className="w-12 h-12 rounded-full object-cover shadow-sm" />
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
             </div>
             <div className="ml-4 hidden sm:block">
-              <h3 className="font-semibold text-zinc-900 dark:text-white text-[15px]">{otherUser.name}</h3>
-              <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">{otherUser.status === 'online' ? 'Active now' : otherUser.lastSeen}</p>
+              <h3 className="font-semibold text-zinc-900 dark:text-white text-[15px]">{otherUser.username}</h3>
+              <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">
+                Online
+              </p>            
             </div>
           </button>
         </div>
@@ -78,8 +86,8 @@ export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
           </span>
         </div>
 
-        {chat.messages.map((msg, idx) => {
-          const isMe = msg.senderId === currentUser.id;
+        {messages.map((msg, idx) => {
+          const isMe = msg.senderId === user?.id;
           return (
             <motion.div 
               key={msg.id}
@@ -89,7 +97,7 @@ export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
               className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
             >
               {!isMe && (
-                <img src={otherUser.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover mr-3 self-end mb-5 hidden sm:block shadow-sm" />
+                <img src={"https://ui-avatars.com/api/?name=" + otherUser.username} alt="Avatar" className="w-8 h-8 rounded-full object-cover mr-3 self-end mb-5 hidden sm:block shadow-sm" />
               )}
               <div className={`max-w-[85%] lg:max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                 <div 
@@ -99,9 +107,14 @@ export function ChatWindow({ chat, onBack, onToggleProfile }: ChatWindowProps) {
                       : 'bg-white dark:bg-white/10 text-zinc-900 dark:text-white rounded-bl-[8px] border border-black/5 dark:border-white/10 shadow-md backdrop-blur-xl'
                   }`}
                 >
-                  <p className="text-[15px] leading-relaxed">{msg.text}</p>
+                  <p className="text-[15px] leading-relaxed">{msg.content}</p>
                 </div>
-                <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1.5 px-1">{msg.timestamp}</span>
+                <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1.5 px-1">
+                  {new Date(msg.createdAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
             </motion.div>
           );

@@ -8,9 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-
-
-
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -40,6 +38,7 @@ export function LoginForm() {
   });
 
   const rememberMe = watch("rememberMe");
+  const { fetchUser } = useAuth();
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
@@ -49,6 +48,7 @@ export function LoginForm() {
           password: data.password,
         },
       );
+      await fetchUser();
       router.push("/chat");
     } catch (error: any) {
       console.error(error);
