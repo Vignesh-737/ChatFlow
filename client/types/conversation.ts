@@ -1,3 +1,24 @@
+export interface UserItem {
+  id: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  status?: "online" | "offline" | "idle";
+}
+
+export interface MessageItem {
+  id: string;
+  content: string;
+  senderId: string;
+  conversationId?: string;
+  createdAt: string;
+  status?: "sending" | "sent" | "error";
+  sender?: {
+    id: string;
+    username: string;
+  };
+}
+
 export interface Conversation {
   id: string;
   isGroup: boolean;
@@ -5,17 +26,8 @@ export interface Conversation {
   updatedAt: string;
 
   members: {
-    user: {
-      id: string;
-      username: string;
-      email: string;
-    };
+    user: UserItem;
   }[];
 
-  messages: {
-    id: string;
-    content: string;
-    senderId: string;
-    createdAt: string;
-  }[];
+  messages?: MessageItem[];
 }

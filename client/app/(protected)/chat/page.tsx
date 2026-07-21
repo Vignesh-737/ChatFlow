@@ -6,91 +6,130 @@ import { Sidebar } from "@/components/chat/Sidebar";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProfilePanel } from "@/components/chat/ProfilePanel";
+import { NewChatModal } from "@/components/chat/NewChatModal";
 import { api } from "@/lib/api";
 import { Conversation } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export default function ChatPage() {
   const { user } = useAuth();
 
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const res = await api.get("/conversations");
-        setConversations(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchConversations = async () => {
+    try {
+      const res = await api.get("/conversations");
+      setConversations(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load conversations");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchConversations();
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
 
   const activeChat =
     conversations.find((c) => c.id === activeChatId) ?? null;
 
   const activeUser =
-    activeChat?.members.find((m) => m.user.id !== user?.id)?.user ?? null;
+    activeChat?.members.find((m) => m.user?.id !== user?.id)?.user ?? null;
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
     setShowProfile(false);
   };
 
+  const handleNewConversationCreated = (
+    conversationId: string,
+    newConversation?: Conversation
+  ) => {
+    if (newConversation) {
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === newConversation.id);
+        if (exists) return prev;
+        return [newConversation, ...prev];
+      });
+    } else {
+      fetchConversations();
+    }
+    setActiveChatId(conversationId);
+  };
+
   return (
     <div className="fixed inset-0 w-full h-full bg-[#f4f4f5] dark:bg-[#05010d] flex overflow-hidden selection:bg-indigo-500/30 font-sans">
-      
       {/* Background Ambient Glows (Responsive & Theme Adaptive) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/10 dark:bg-indigo-600/20 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 dark:bg-purple-600/20 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen" />
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
+        <div
+          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+          style={{
+            backgroundImage:
+              'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")',
+          }}
+        />
       </div>
 
       <div className="relative z-10 w-full h-full flex">
-        
-        {/* Left Sidebar */}
+        {/* Left Navigation Sidebar */}
         <div className="hidden md:flex h-full shrink-0">
           <Sidebar />
         </div>
 
-        {/* Conversation List */}
-        <div className={`h-full w-full md:w-[320px] lg:w-[360px] xl:w-[400px] shrink-0 ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
-           <ConversationList conversations={conversations} activeId={activeChatId} onSelect={handleSelectChat}/>
+        {/* Conversation List Sidebar */}
+        <div
+          className={`h-full w-full md:w-[320px] lg:w-[360px] xl:w-[400px] shrink-0 ${
+            activeChatId ? "hidden md:flex" : "flex"
+          }`}
+        >
+          <ConversationList
+            conversations={conversations}
+            activeId={activeChatId}
+            loading={loading}
+            onSelect={handleSelectChat}
+            onOpenNewChat={() => setIsNewChatOpen(true)}
+          />
         </div>
 
         {/* Main Chat Window */}
-        <div className={`flex-1 h-full min-w-0 ${activeChatId ? 'flex' : 'hidden md:flex'}`}>
-          <ChatWindow 
-            chat={activeChat} 
-            onBack={() => setActiveChatId(null)} 
-            onToggleProfile={() => setShowProfile(!showProfile)} 
+        <div
+          className={`flex-1 h-full min-w-0 ${
+            activeChatId ? "flex" : "hidden md:flex"
+          }`}
+        >
+          <ChatWindow
+            chat={activeChat}
+            onBack={() => setActiveChatId(null)}
+            onToggleProfile={() => setShowProfile(!showProfile)}
           />
         </div>
 
         {/* Right Profile Panel */}
         {showProfile && activeUser && (
           <div className="hidden xl:flex w-[360px] shrink-0 h-full shadow-[-20px_0_40px_rgba(0,0,0,0.05)] dark:shadow-[-20px_0_40px_rgba(0,0,0,0.2)]">
-            <ProfilePanel user={activeUser} onClose={() => setShowProfile(false)} />
+            <ProfilePanel
+              user={activeUser}
+              onClose={() => setShowProfile(false)}
+            />
           </div>
         )}
-
       </div>
+
+      {/* New Chat Modal */}
+      <NewChatModal
+        isOpen={isNewChatOpen}
+        onClose={() => setIsNewChatOpen(false)}
+        onSelectConversation={handleNewConversationCreated}
+      />
     </div>
   );
 }
