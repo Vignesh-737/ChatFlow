@@ -1,266 +1,150 @@
-# 🚀 ChatFlow TODO
+# ChatFlow TODO
 
-## ✅ Completed
-
-### Project Setup
-- [x] Next.js 16
-- [x] Express.js
-- [x] TypeScript
-- [x] PostgreSQL
-- [x] Prisma ORM
-- [x] Socket.IO setup
-- [x] Tailwind CSS
-- [x] shadcn/ui
+> Goal: Build a production-ready real-time chat application.
 
 ---
 
-## ✅ Database
+## 🚀 Phase 1 - Core Messaging (Current Sprint)
 
-- [x] User Model
-- [x] Conversation Model
-- [x] ConversationMember Model
-- [x] Message Model
-- [x] Prisma migrations
+### Send Messages
+- [ ] Connect message input to backend
+- [ ] POST /messages
+- [ ] Optimistic UI update
+- [ ] Handle send failures
+- [ ] Clear input after successful send
 
----
+### Fetch Messages
+- [ ] Create GET /messages/:conversationId
+- [ ] Load messages when conversation opens
+- [ ] Show loading state
+- [ ] Handle empty conversations
 
-## ✅ Authentication (Backend)
-
-- [x] Register API
-- [x] Login API
-- [x] Password hashing (bcrypt)
-- [x] JWT generation
-- [x] JWT verification
-- [x] Cookie Parser
-- [x] HttpOnly Cookie Authentication
-- [x] Auth Middleware
-- [x] GET /auth/me
+### Auto Scroll
+- [ ] Scroll to bottom after initial load
+- [ ] Scroll after sending a message
+- [ ] Scroll when receiving a new message
 
 ---
 
-## ✅ Authentication (Frontend)
+## ⚡ Phase 2 - Real-time Communication
 
-- [x] Login UI
-- [x] Register UI
-- [x] Zod validation
-- [x] React Hook Form
-- [x] Login API integration
-- [x] Register API integration
-- [x] Axios instance
-- [x] withCredentials enabled
+### Socket.IO
+- [ ] Connect socket after login
+- [ ] Join conversation room
+- [ ] Receive new messages
+- [ ] Send messages through socket
+- [ ] Prevent duplicate messages
 
----
+### Typing Indicator
+- [ ] Emit typing event
+- [ ] Emit stop typing event
+- [ ] Show "User is typing..."
+- [ ] Debounce typing events
 
-# 🟨 Authentication (Remaining)
-
-- [ ] Auth Context
-- [ ] Redirect to /chat after login
-- [ ] Protect /chat page
-- [ ] Logout API
-- [ ] Logout button
-- [ ] Auto fetch current user
-- [ ] Loading screen while checking authentication
+### Online Status
+- [ ] Track connected users
+- [ ] Show online/offline indicator
+- [ ] Update status in real time
 
 ---
 
-# 🟨 Chat UI
+## 💬 Phase 3 - Conversations
 
-## Layout
+### New Conversation
+- [ ] Search users
+- [ ] Create conversation
+- [ ] Prevent duplicate conversations
+- [ ] Open newly created conversation
 
-- [ ] Main Layout
-- [ ] Sidebar
+### Conversation List
+- [ ] Update last message
+- [ ] Move active conversation to top
+- [ ] Show unread message count
+
+---
+
+## 📎 Phase 4 - Attachments
+
+### File Upload
+- [ ] Upload images
+- [ ] Upload documents
+- [ ] Display attachments
+- [ ] Download attachments
+
+---
+
+## ✅ Phase 5 - Read Receipts
+
+- [ ] Message delivered
+- [ ] Message seen
+- [ ] Seen timestamp
+
+---
+
+## 🔔 Phase 6 - Notifications
+
+- [ ] Unread badges
+- [ ] Browser notifications
+- [ ] Sound notification (optional)
+
+---
+
+## 🔒 Phase 7 - Security
+
+- [ ] Validate JWT on sockets
+- [ ] Conversation authorization
+- [ ] Rate limit message sending
+- [ ] Input validation
+
+---
+
+## 🧪 Phase 8 - Testing
+
+- [ ] Test authentication
+- [ ] Test messaging
+- [ ] Test Socket.IO
+- [ ] Test authorization
+- [ ] Handle edge cases
+
+---
+
+## 🚀 Phase 9 - Deployment
+
+### Docker
+- [ ] Dockerize backend
+- [ ] Dockerize frontend
+- [ ] Docker Compose
+
+### Production
+- [ ] Deploy backend
+- [ ] Deploy frontend
+- [ ] Configure environment variables
+- [ ] Configure CORS
+
+---
+
+## 📖 Phase 10 - Documentation
+
+- [ ] Update README
+- [ ] API documentation
+- [ ] Architecture diagram
+- [ ] Screenshots
+- [ ] Demo GIF
+
+---
+
+# 🎯 MVP Checklist
+
+- [ ] Authentication
 - [ ] Conversation List
-- [ ] Chat Window
-- [ ] Chat Header
-- [ ] Chat Input
-- [ ] Profile Panel
-
----
-
-## Responsive UI
-
-- [ ] Desktop
-- [ ] Laptop
-- [ ] Tablet
-- [ ] Mobile
-- [ ] Mobile Drawer
-
----
-
-## Theme
-
-- [ ] Dark Mode
-- [ ] Light Mode
-- [ ] Theme Toggle
-- [ ] Persist Theme
-
----
-
-# 🟨 Real-time Messaging
-
-- [ ] Load Conversations
-- [ ] Load Messages
-- [ ] Send Message
-- [ ] Receive Message
-- [ ] Auto Scroll
-- [ ] Optimistic UI
-
----
-
-# 🟨 Socket.IO
-
-- [x] Connection
-- [x] Join Room
-- [x] Send Message
-- [x] Receive Message
-
-Remaining
-
+- [ ] Send Messages
+- [ ] Fetch Messages
+- [ ] Real-time Messaging
 - [ ] Typing Indicator
 - [ ] Online Status
-- [ ] User Presence
-- [ ] Disconnect Handling
-- [ ] Read Receipts
-- [ ] Reconnection
-
----
-
-# 🟨 Conversations
-
 - [ ] Create Conversation
-- [ ] One-to-One Chat
-- [ ] Conversation List API
-- [ ] Last Message Preview
-- [ ] Unread Count
-
----
-
-# 🟨 Group Chats
-
-- [ ] Create Group
-- [ ] Add Members
-- [ ] Remove Members
-- [ ] Group Admin
-- [ ] Rename Group
-
----
-
-# 🟨 Message Features
-
-- [ ] Edit Message
-- [ ] Delete Message
-- [ ] Reply
-- [ ] Reactions
-- [ ] Emoji Picker
-
----
-
-# 🟨 File Uploads
-
-- [ ] Upload Images
-- [ ] Upload Documents
-- [ ] Preview Images
-- [ ] Download Files
-
----
-
-# 🟨 User Features
-
-- [ ] User Profile
-- [ ] Edit Profile
-- [ ] Avatar Upload
-- [ ] Change Password
-
----
-
-# 🟨 Search
-
-- [ ] Search Users
-- [ ] Search Conversations
-- [ ] Search Messages
-
----
-
-# 🟨 AI Assistant
-
-- [ ] AI Chat
-- [ ] Conversation Summary
-- [ ] Smart Replies
-
----
-
-# 🟨 Notifications
-
-- [ ] Toast Notifications
-- [ ] Sound
-- [ ] Browser Notifications
-
----
-
-# 🟨 Deployment
-
-## Backend
-
+- [ ] File Upload
+- [ ] Read Receipts
+- [ ] Responsive UI
 - [ ] Docker
-- [ ] Environment Variables
-- [ ] Production Build
-
-## Frontend
-
-- [ ] Vercel Deployment
-- [ ] Production Environment
-
----
-
-# 🟨 DevOps
-
-- [ ] Docker Compose
-- [ ] CI/CD
-- [ ] GitHub Actions
-
----
-
-# 🟨 Future
-
-- [ ] Refresh Token
-- [ ] Email Verification
-- [ ] Forgot Password
-- [ ] 2FA
-- [ ] Push Notifications
-- [ ] Voice Calls
-- [ ] Video Calls
-
----
-
-# 📚 Concepts to Learn (Don't Skip)
-
-## Backend
-
-- [ ] JWT Flow
-- [ ] Cookies vs LocalStorage
-- [ ] Refresh Tokens
-- [ ] Authentication Middleware
-- [ ] Request Lifecycle
-- [ ] Express Middleware
-
-## Frontend
-
-- [ ] Next.js App Router
-- [ ] Server vs Client Components
-- [ ] React Context
-- [ ] React Hook Form
-- [ ] Zod
-- [ ] Axios Instance
-- [ ] Protected Routes
-- [ ] Theme Management
-
----
-
-## 🎯 Current Focus
-
-1. Finish Authentication
-2. Build Main Chat UI
-3. Connect UI with Backend
-4. Complete Real-time Messaging
-5. Polish UI/UX
-6. Deploy
+- [ ] Deployment
