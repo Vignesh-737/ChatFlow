@@ -8,7 +8,8 @@ import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProfilePanel } from "@/components/chat/ProfilePanel";
 import { NewChatModal } from "@/components/chat/NewChatModal";
 import { api } from "@/lib/api";
-import { Conversation } from "@/types/conversation";
+import { socket } from "@/lib/socket";
+import { Conversation, MessageItem } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -36,6 +37,44 @@ export default function ChatPage() {
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  // Connect socket and listen for new-message to update conversation list in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    conversations.forEach((c) => {
+      socket.emit("join-room", c.id);
+    });
+
+    const handleNewMessage = (newMessage: MessageItem) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === newMessage.conversationId) {
+            const updatedMessages = c.messages ? [...c.messages] : [];
+            if (!updatedMessages.some((m) => m.id === newMessage.id)) {
+              updatedMessages.push(newMessage);
+            }
+            return {
+              ...c,
+              updatedAt: newMessage.createdAt,
+              messages: updatedMessages,
+            };
+          }
+          return c;
+        })
+      );
+    };
+
+    socket.on("new-message", handleNewMessage);
+
+    return () => {
+      socket.off("new-message", handleNewMessage);
+    };
+  }, [user?.id, conversations.map((c) => c.id).join(",")]);
 
   const activeChat =
     conversations.find((c) => c.id === activeChatId) ?? null;

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import prisma from "../config/prisma.js";
 import { sendMessageService } from "../services/message.service.js";
+import { getIO } from "../sockets/socket.js";
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
@@ -18,6 +19,12 @@ export const sendMessage = async (req: Request, res: Response) => {
       senderId,
       content,
     });
+
+    try {
+      getIO().to(conversationId).emit("new-message", message);
+    } catch (ioErr) {
+      console.error("Socket emit failed:", ioErr);
+    }
 
     return res.status(201).json({
       message: "Message sent successfully",

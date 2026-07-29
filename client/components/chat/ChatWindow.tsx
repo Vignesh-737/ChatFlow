@@ -23,6 +23,7 @@ import { Conversation, MessageItem } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
+import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 
 interface ChatWindowProps {
@@ -52,18 +53,15 @@ export function ChatWindow({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync state when active chat changes
+  // Fetch all messages from API whenever the active conversation changes.
+  // This is the single source of truth — we do NOT sync from chat.messages
+  // because that object is updated by the socket listener in page.tsx and
+  // would overwrite our locally accumulated messages on every new message.
   useEffect(() => {
-    if (chat?.messages) {
-      setMessages(chat.messages);
-    } else {
+    if (!chat?.id) {
       setMessages([]);
+      return;
     }
-  }, [chat]);
-
-  // Fetch messages if chat selected but messages empty
-  useEffect(() => {
-    if (!chat?.id) return;
 
     const fetchMessages = async () => {
       try {
@@ -75,6 +73,44 @@ export function ChatWindow({
     };
 
     fetchMessages();
+  }, [chat?.id]);
+
+  // Real-time socket listener for incoming messages
+  useEffect(() => {
+    if (!chat?.id) return;
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.emit("join-room", chat.id);
+
+    const handleNewMessage = (newMessage: MessageItem) => {
+      if (newMessage.conversationId === chat.id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMessage.id)) {
+            return prev;
+          }
+          // Remove any temporary optimistic message with matching content and sender
+          const filtered = prev.filter(
+            (m) =>
+              !(
+                m.status === "sending" &&
+                m.content === newMessage.content &&
+                (m.senderId === newMessage.senderId ||
+                  m.senderId === newMessage.sender?.id)
+              )
+          );
+          return [...filtered, newMessage];
+        });
+      }
+    };
+
+    socket.on("new-message", handleNewMessage);
+
+    return () => {
+      socket.off("new-message", handleNewMessage);
+    };
   }, [chat?.id]);
 
   // Auto scroll to bottom
@@ -125,6 +161,7 @@ export function ChatWindow({
 
   // Send message with Optimistic UI
   const handleSend = async () => {
+    console.log("SEND CALLED");
     const content = inputText.trim();
     if (!content || !chat?.id || sending) return;
 
@@ -151,6 +188,7 @@ export function ChatWindow({
 
     // Add optimistic message to list immediately
     setMessages((prev) => [...prev, optimisticMsg]);
+    
     setSending(true);
 
     try {
@@ -218,6 +256,7 @@ export function ChatWindow({
       );
     }
   };
+
 
   if (!chat) {
     return (
@@ -378,7 +417,8 @@ export function ChatWindow({
             </div>
 
             {messages.map((msg, idx) => {
-              const isMe = msg.senderId === user?.id;
+              const senderId = msg.senderId || msg.sender?.id;
+              const isOwnMessage = Boolean(user?.id && senderId === user.id);
               const isSending = msg.status === "sending";
               const isError = msg.status === "error";
 
@@ -388,12 +428,12 @@ export function ChatWindow({
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.3) }}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                  className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                 >
-                  {!isMe && (
+                  {!isOwnMessage && (
                     <img
                       src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        otherUser.username
+                        msg.sender?.username || otherUser.username
                       )}`}
                       alt="Avatar"
                       className="w-8 h-8 rounded-full object-cover mr-3 self-end mb-1 hidden sm:block shadow-sm shrink-0"
@@ -402,12 +442,12 @@ export function ChatWindow({
 
                   <div
                     className={`max-w-[85%] lg:max-w-[70%] flex flex-col ${
-                      isMe ? "items-end" : "items-start"
+                      isOwnMessage ? "items-end" : "items-start"
                     }`}
                   >
                     <div
                       className={`px-5 py-3.5 rounded-[24px] relative group ${
-                        isMe
+                        isOwnMessage
                           ? "bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-[8px] shadow-[0_4px_20px_rgba(99,102,241,0.3)] border border-indigo-400/20"
                           : "bg-white dark:bg-white/10 text-zinc-900 dark:text-white rounded-bl-[8px] border border-black/5 dark:border-white/10 shadow-md backdrop-blur-xl"
                       }`}
@@ -425,7 +465,7 @@ export function ChatWindow({
                         })}
                       </span>
 
-                      {isMe && (
+                      {isOwnMessage && (
                         <span className="text-zinc-400 dark:text-zinc-500">
                           {isSending ? (
                             <Clock className="w-3 h-3 animate-spin text-indigo-400" />
