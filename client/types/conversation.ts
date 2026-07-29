@@ -4,6 +4,8 @@ export interface UserItem {
   email: string;
   avatar?: string;
   status?: "online" | "offline" | "idle";
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 export interface MessageItem {
@@ -12,6 +14,7 @@ export interface MessageItem {
   senderId: string;
   conversationId?: string;
   createdAt: string;
+  isRead?: boolean;
   status?: "sending" | "sent" | "error";
   sender?: {
     id: string;

@@ -20,6 +20,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  lastSeen  DateTime @default(now())
+  isOnline  Boolean  @default(false)
 
   // Relations
   conversationMembers ConversationMember[]
@@ -62,6 +64,7 @@ model Message {
   senderId       String
   conversationId String
 
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

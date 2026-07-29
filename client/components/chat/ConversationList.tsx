@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Plus, MessageSquare, Sparkles } from "lucide-react";
+import { Search, Plus, MessageSquare, Sparkles, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Conversation } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ interface ConversationListProps {
   loading?: boolean;
   onSelect: (id: string) => void;
   onOpenNewChat: () => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export function ConversationList({
@@ -20,6 +21,7 @@ export function ConversationList({
   loading = false,
   onSelect,
   onOpenNewChat,
+  onOpenMobileMenu,
 }: ConversationListProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +59,14 @@ export function ConversationList({
       <div className="p-4 lg:p-6 pb-3 shrink-0 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
+            {onOpenMobileMenu && (
+              <button
+                onClick={onOpenMobileMenu}
+                className="md:hidden mr-1 p-2 -ml-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+              </button>
+            )}
             <h2 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
               Messages
             </h2>
@@ -184,7 +194,6 @@ export function ConversationList({
                       alt={otherUser.username}
                       className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
                     />
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
                   </div>
 
                   {/* Chat Info */}

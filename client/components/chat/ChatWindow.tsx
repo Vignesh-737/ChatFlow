@@ -14,6 +14,7 @@ import {
   ArrowDown,
   Clock,
   Check,
+  CheckCheck,
   AlertCircle,
   RefreshCw,
   Loader2,
@@ -52,6 +53,10 @@ export function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Track whether we already emitted typing-start so we don't spam the server
+  const isEmittingTyping = useRef(false);
+  // Auto-stop typing after 2 s of no keypresses
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch all messages from API whenever the active conversation changes.
   // This is the single source of truth — we do NOT sync from chat.messages
@@ -108,8 +113,37 @@ export function ChatWindow({
 
     socket.on("new-message", handleNewMessage);
 
+    // Typing events from the OTHER user in this conversation
+    const handleUserTyping = ({ conversationId }: { conversationId: string }) => {
+      if (conversationId === chat.id) setIsTyping(true);
+    };
+
+    const handleUserStopTyping = ({ conversationId }: { conversationId: string }) => {
+      if (conversationId === chat.id) setIsTyping(false);
+    };
+    
+    const handleMessagesRead = ({ messageIds, conversationId }: { messageIds: string[], conversationId: string }) => {
+      if (conversationId === chat.id) {
+        setMessages((prev) =>
+          prev.map((m) => (messageIds.includes(m.id) ? { ...m, isRead: true } : m))
+        );
+      }
+    };
+
+    socket.on("user-typing", handleUserTyping);
+    socket.on("user-stop-typing", handleUserStopTyping);
+    socket.on("messages-read", handleMessagesRead);
+
     return () => {
       socket.off("new-message", handleNewMessage);
+      socket.off("user-typing", handleUserTyping);
+      socket.off("user-stop-typing", handleUserStopTyping);
+      socket.off("messages-read", handleMessagesRead);
+      // Make sure we stop typing when switching conversations
+      if (isEmittingTyping.current) {
+        socket.emit("typing-stop", { conversationId: chat.id });
+        isEmittingTyping.current = false;
+      }
     };
   }, [chat?.id]);
 
@@ -117,6 +151,30 @@ export function ChatWindow({
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
+
+  // Mark unread messages from other user as read
+  useEffect(() => {
+    if (!chat?.id || !user?.id || messages.length === 0) return;
+    
+    const unreadMessageIds = messages
+      .filter((m) => {
+        const mSenderId = m.senderId || m.sender?.id;
+        return mSenderId !== user.id && !m.isRead;
+      })
+      .map((m) => m.id);
+
+    if (unreadMessageIds.length > 0) {
+      // Optimistically mark local state
+      setMessages((prev) =>
+        prev.map((m) => (unreadMessageIds.includes(m.id) ? { ...m, isRead: true } : m))
+      );
+      // Emit to server
+      socket.emit("mark-messages-read", {
+        messageIds: unreadMessageIds,
+        conversationId: chat.id
+      });
+    }
+  }, [messages, chat?.id, user?.id]);
 
   useEffect(() => {
     scrollToBottom("auto");
@@ -138,9 +196,20 @@ export function ChatWindow({
     setShowScrollBottom(isScrolledUp);
   };
 
-  // Auto-growing textarea handler
+  // Emit typing-stop and clear timeout helper
+  const emitTypingStop = () => {
+    if (!chat?.id) return;
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    if (isEmittingTyping.current) {
+      socket.emit("typing-stop", { conversationId: chat.id });
+      isEmittingTyping.current = false;
+    }
+  };
+
+  // Auto-growing textarea handler + typing emit
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value);
+    const value = e.target.value;
+    setInputText(value);
 
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -148,6 +217,22 @@ export function ChatWindow({
         textareaRef.current.scrollHeight,
         120
       )}px`;
+    }
+
+    if (!chat?.id || !socket.connected) return;
+
+    if (value.trim()) {
+      // Emit typing-start only once until we stop
+      if (!isEmittingTyping.current) {
+        socket.emit("typing-start", { conversationId: chat.id });
+        isEmittingTyping.current = true;
+      }
+      // Reset the 2-second idle timeout
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(emitTypingStop, 2000);
+    } else {
+      // Input cleared — stop immediately
+      emitTypingStop();
     }
   };
 
@@ -165,8 +250,9 @@ export function ChatWindow({
     const content = inputText.trim();
     if (!content || !chat?.id || sending) return;
 
-    // Reset textarea
+    // Reset textarea and stop typing indicator
     setInputText("");
+    emitTypingStop();
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -290,7 +376,6 @@ export function ChatWindow({
 
   if (!otherUser) return null;
 
-  // Group messages by Date
   const formatDateLabel = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -301,6 +386,17 @@ export function ChatWindow({
     if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
 
     return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const formatLastSeen = (dateStr?: string) => {
+    if (!dateStr) return "Offline";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return "Last seen just now";
+    if (minutes < 60) return `Last seen ${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Last seen ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    return `Last seen ${new Date(dateStr).toLocaleDateString()}`;
   };
 
   return (
@@ -327,15 +423,23 @@ export function ChatWindow({
                 alt={otherUser.username}
                 className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
               />
-              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
+              {otherUser.isOnline && (
+                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
+              )}
             </div>
             <div className="ml-4 hidden sm:block">
               <h3 className="font-semibold text-zinc-900 dark:text-white text-[15px]">
                 {chat.name || otherUser.username}
               </h3>
               <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span>Online</span>
+                {otherUser.isOnline ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-green-600 dark:text-green-400">Online</span>
+                  </>
+                ) : (
+                  <span>{formatLastSeen(otherUser.lastSeen)}</span>
+                )}
               </p>
             </div>
           </button>
@@ -477,8 +581,10 @@ export function ChatWindow({
                               <AlertCircle className="w-3 h-3 text-red-400" />
                               <span>Failed. Retry</span>
                             </button>
+                          ) : msg.isRead ? (
+                            <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
                           ) : (
-                            <Check className="w-3.5 h-3.5 text-indigo-400" />
+                            <Check className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
                           )}
                         </span>
                       )}
@@ -491,23 +597,27 @@ export function ChatWindow({
         )}
 
         {/* Typing Indicator */}
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center space-x-2 text-xs text-zinc-500 dark:text-zinc-400 pl-2"
-          >
-            <div className="flex space-x-1 bg-white/60 dark:bg-white/10 p-3 rounded-2xl rounded-bl-sm border border-black/5 dark:border-white/10 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" />
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
-            </div>
-            <span className="font-medium text-[11px]">
-              {otherUser.username} is typing...
-            </span>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {isTyping && (
+            <motion.div
+              key="typing-indicator"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center space-x-2 pl-2"
+            >
+              <div className="flex items-center space-x-1.5 bg-white dark:bg-white/10 px-4 py-3 rounded-2xl rounded-bl-sm border border-black/5 dark:border-white/10 shadow-md backdrop-blur-xl">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-duration:0.9s]" />
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-duration:0.9s] [animation-delay:0.18s]" />
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-duration:0.9s] [animation-delay:0.36s]" />
+              </div>
+              <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+                {otherUser.username} is typing...
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div ref={messagesEndRef} />
       </div>

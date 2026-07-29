@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -18,6 +20,7 @@ export default function ChatPage() {
 
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,10 +72,33 @@ export default function ChatPage() {
       );
     };
 
+    const handleUserStatusChanged = ({
+      userId,
+      isOnline,
+      lastSeen,
+    }: {
+      userId: string;
+      isOnline: boolean;
+      lastSeen?: string;
+    }) => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          members: c.members.map((m) =>
+            m.user.id === userId
+              ? { ...m, user: { ...m.user, isOnline, lastSeen } }
+              : m
+          ),
+        }))
+      );
+    };
+
     socket.on("new-message", handleNewMessage);
+    socket.on("user-status-changed", handleUserStatusChanged);
 
     return () => {
       socket.off("new-message", handleNewMessage);
+      socket.off("user-status-changed", handleUserStatusChanged);
     };
   }, [user?.id, conversations.map((c) => c.id).join(",")]);
 
@@ -119,9 +145,41 @@ export default function ChatPage() {
       </div>
 
       <div className="relative z-10 w-full h-full flex">
+        {/* Mobile Menu Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+              />
+              {/* Drawer */}
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#05010d] z-50 md:hidden flex"
+              >
+                <Sidebar expanded />
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/10 rounded-full text-zinc-900 dark:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Left Navigation Sidebar */}
         <div className="hidden md:flex h-full shrink-0">
-          <Sidebar />
+          <Sidebar expanded/>
         </div>
 
         {/* Conversation List Sidebar */}
@@ -136,6 +194,7 @@ export default function ChatPage() {
             loading={loading}
             onSelect={handleSelectChat}
             onOpenNewChat={() => setIsNewChatOpen(true)}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           />
         </div>
 

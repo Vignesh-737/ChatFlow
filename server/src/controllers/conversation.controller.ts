@@ -118,6 +118,8 @@ export const getConversations = async (
                 id: true,
                 username: true,
                 email: true,
+                isOnline: true,
+                lastSeen: true,
               },
             },
           },
