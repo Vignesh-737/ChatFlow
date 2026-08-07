@@ -54,6 +54,14 @@ export default function ChatPage() {
     });
 
     const handleNewMessage = (newMessage: MessageItem) => {
+      if (
+        newMessage.senderId !== user?.id &&
+        newMessage.conversationId !== activeChatId
+      ) {
+        const senderName = newMessage.sender?.username || "Someone";
+        toast(`${senderName}: ${newMessage.content}`);
+      }
+
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id === newMessage.conversationId) {
@@ -106,7 +114,7 @@ export default function ChatPage() {
     conversations.find((c) => c.id === activeChatId) ?? null;
 
   const activeUser =
-    activeChat?.members.find((m) => m.user?.id !== user?.id)?.user ?? null;
+    activeChat?.members?.find((m) => m.user?.id !== user?.id)?.user ?? null;
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
@@ -130,7 +138,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#f4f4f5] dark:bg-[#05010d] flex overflow-hidden selection:bg-indigo-500/30 font-sans">
+    <div className="fixed inset-0 w-full h-full bg-[#f2ebfc] dark:bg-[#05010d] flex overflow-hidden selection:bg-indigo-500/30 font-sans">
       {/* Background Ambient Glows (Responsive & Theme Adaptive) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/10 dark:bg-indigo-600/20 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen" />

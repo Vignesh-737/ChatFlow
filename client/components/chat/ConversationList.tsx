@@ -54,7 +54,7 @@ export function ConversationList({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white/60 dark:bg-black/40 backdrop-blur-2xl border-r border-black/5 dark:border-white/5 z-10 relative overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-[#f3ebfc]/70 dark:bg-black/40 backdrop-blur-2xl border-r border-black/5 dark:border-white/5 z-10 relative overflow-hidden">
       {/* Header */}
       <div className="p-4 lg:p-6 pb-3 shrink-0 space-y-4">
         <div className="flex items-center justify-between">
@@ -154,8 +154,8 @@ export function ConversationList({
           <AnimatePresence>
             {filteredConversations.map((chat) => {
               const otherUser =
-                chat.members.find((m) => m.user?.id !== user?.id)?.user ??
-                chat.members[0]?.user;
+                chat.members?.find((m) => m.user?.id !== user?.id)?.user ??
+                chat.members?.[0]?.user;
 
               if (!otherUser) return null;
 
@@ -214,15 +214,29 @@ export function ConversationList({
                       </span>
                     </div>
 
-                    <p className="text-sm truncate text-zinc-500 dark:text-zinc-400">
-                      {lastMsg?.content ? (
-                        <span>{lastMsg.content}</span>
-                      ) : (
-                        <span className="italic text-xs text-indigo-500/70">
-                          Start a conversation...
-                        </span>
-                      )}
-                    </p>
+                    {(() => {
+                      const isUnread =
+                        lastMsg &&
+                        !lastMsg.isRead &&
+                        (lastMsg.senderId !== user?.id && lastMsg.sender?.id !== user?.id);
+                      return (
+                        <p
+                          className={`text-sm truncate ${
+                            isUnread
+                              ? "font-bold text-zinc-900 dark:text-zinc-100"
+                              : "text-zinc-500 dark:text-zinc-400"
+                          }`}
+                        >
+                          {lastMsg?.content ? (
+                            <span>{lastMsg.content}</span>
+                          ) : (
+                            <span className="italic text-xs text-indigo-500/70">
+                              Start a conversation...
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </motion.button>
               );

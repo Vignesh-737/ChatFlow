@@ -371,8 +371,8 @@ export function ChatWindow({
   }
 
   const otherUser =
-    chat.members.find((m) => m.user?.id !== user?.id)?.user ??
-    chat.members[0]?.user;
+    chat.members?.find((m) => m.user?.id !== user?.id)?.user ??
+    chat.members?.[0]?.user;
 
   if (!otherUser) return null;
 
@@ -400,7 +400,7 @@ export function ChatWindow({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-zinc-50 dark:bg-transparent relative z-0">
+    <div className="w-full h-full flex flex-col bg-[#f5effd]/50 dark:bg-transparent relative z-0">
       {/* Sticky Header */}
       <div className="h-[88px] px-4 lg:px-6 flex items-center justify-between border-b border-black/5 dark:border-white/5 bg-white/70 dark:bg-black/20 backdrop-blur-2xl shrink-0 z-20">
         <div className="flex items-center">
@@ -446,18 +446,6 @@ export function ChatWindow({
         </div>
 
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <button
-            onClick={() => toast.info("Voice call feature coming soon!")}
-            className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-600 dark:text-zinc-300"
-          >
-            <Phone className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => toast.info("Video call feature coming soon!")}
-            className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-600 dark:text-zinc-300 hidden sm:block"
-          >
-            <Video className="w-5 h-5" />
-          </button>
           <button
             onClick={() => toast.info("Message search coming soon!")}
             className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-zinc-600 dark:text-zinc-300 hidden md:block"
@@ -655,7 +643,7 @@ export function ChatWindow({
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 max-h-32 bg-transparent border-none focus:outline-none resize-none py-3.5 text-[15px] text-zinc-900 dark:text-white placeholder-zinc-500 dark:placeholder-zinc-500 scrollbar-hide"
+            className="flex-1 max-h-32 bg-transparent border-none focus:outline-none resize-none py-3.5 text-[15px] text-zinc-900 dark:text-white placeholder-zinc-500 dark:placeholder-zinc-500 [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           />
 
           <button

@@ -28,7 +28,7 @@ return (
   <div
     className={`${
       expanded ? "w-64" : "w-20 lg:w-64"
-    } h-full flex flex-col justify-between p-4 border-r border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/20 backdrop-blur-3xl z-20 transition-all duration-300`}
+    } h-full flex flex-col justify-between p-4 border-r border-black/5 dark:border-white/5 bg-[#f6f0fe]/60 dark:bg-black/20 backdrop-blur-3xl z-20 transition-all duration-300`}
   >
     {/* Top Section */}
     <div className="flex flex-col space-y-8">
@@ -39,7 +39,7 @@ return (
         } px-2 mt-2`}
       >
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)] shrink-0">
-          <img src="/Logo.png" alt="ChatFlow Logo" />
+          <img src="/logo.webp" alt="ChatFlow Logo" />
         </div>
 
         {showLabels && (

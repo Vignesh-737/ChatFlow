@@ -17,7 +17,7 @@ export function AuthShowcase() {
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[1px] mb-2 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
           <div className="w-full h-full rounded-full bg-[#0a0514] flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/30 to-purple-600/30" />
-            <img src="./logo.png" alt="Logo" className="w-full h-full object-cover rounded-full relative z-10" />
+            <img src="./logo.webp" alt="Logo" className="w-full h-full object-cover rounded-full relative z-10" />
           </div>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
@@ -37,7 +37,7 @@ export function AuthShowcase() {
           <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-b from-white/20 to-transparent p-[1px] shadow-[0_0_30px_rgba(99,102,241,0.3)]">
              <div className="w-full h-full rounded-2xl bg-[#0a0514] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/30 to-purple-600/30" />
-                <img src="./logo.png" alt="Logo" className="w-full h-full object-cover rounded-2xl relative z-10" />
+                <img src="./logo.webp" alt="Logo" className="w-full h-full object-cover rounded-2xl relative z-10" />
              </div>
           </div>
           <h1 className="text-3xl xl:text-4xl font-bold text-white tracking-tight">ChatFlow</h1>

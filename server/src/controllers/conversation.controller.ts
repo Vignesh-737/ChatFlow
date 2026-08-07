@@ -111,6 +111,11 @@ export const getConversations = async (
         },
       },
       include: {
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
         members: {
           include: {
             user: {

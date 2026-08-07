@@ -16,6 +16,8 @@ interface User {
   id: string;
   username: string;
   email: string;
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 interface ProfilePanelProps {
@@ -25,6 +27,17 @@ interface ProfilePanelProps {
 
 export function ProfilePanel({ user, onClose }: ProfilePanelProps) {
   if (!user) return null;
+
+  const formatLastSeen = (dateStr?: string) => {
+    if (!dateStr) return "Offline";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return "Last seen just now";
+    if (minutes < 60) return `Last seen ${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Last seen ${hours}h ago`;
+    return `Last seen ${new Date(dateStr).toLocaleDateString()}`;
+  };
 
   return (
     <div className="w-full h-full bg-white/80 dark:bg-black/40 backdrop-blur-3xl border-l border-black/5 dark:border-white/5 flex flex-col z-20">
@@ -63,7 +76,13 @@ export function ProfilePanel({ user, onClose }: ProfilePanelProps) {
             {user.email}
           </p>
 
-          <p className="text-sm text-green-500 mt-2">Online</p>
+          {user.isOnline ? (
+            <p className="text-sm text-green-500 font-medium mt-2">Online</p>
+          ) : (
+            <p className="text-sm text-zinc-400 font-medium mt-2">
+              {formatLastSeen(user.lastSeen)}
+            </p>
+          )}
         </div>
 
         {/* Actions */}
