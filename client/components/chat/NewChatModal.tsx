@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, UserPlus, MessageSquare, Loader2 } from "lucide-react";
+import { X, Search, UserPlus, MessageSquare, Loader2, Users, Check } from "lucide-react";
 import { api } from "@/lib/api";
 import { UserItem, Conversation } from "@/types/conversation";
 import { toast } from "sonner";
@@ -22,6 +22,10 @@ export function NewChatModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [creatingUserId, setCreatingUserId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"direct" | "group">("direct");
+  const [groupName, setGroupName] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,6 +44,9 @@ export function NewChatModal({
     };
 
     fetchUsers();
+    setMode("direct");
+    setGroupName("");
+    setSelectedUserIds([]);
   }, [isOpen]);
 
   const filteredUsers = users.filter(
@@ -47,6 +54,41 @@ export function NewChatModal({
       u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(id) ? prev.filter((uId) => uId !== id) : [...prev, id]
+    );
+  };
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupName.trim()) {
+      toast.error("Please enter a group name");
+      return;
+    }
+    if (selectedUserIds.length === 0) {
+      toast.error("Please select at least one member");
+      return;
+    }
+
+    setCreatingGroup(true);
+    try {
+      const res = await api.post("/conversations/group", {
+        name: groupName.trim(),
+        memberIds: selectedUserIds,
+      });
+      const convData = res.data.conversation || res.data;
+      toast.success(`Group "${groupName}" created!`);
+      onSelectConversation(convData.id, convData);
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to create group");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
 
   const handleStartChat = async (targetUser: UserItem) => {
     setCreatingUserId(targetUser.id);
@@ -94,14 +136,16 @@ export function NewChatModal({
           <div className="p-5 border-b border-black/5 dark:border-white/5 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
-                <UserPlus className="w-5 h-5" />
+                {mode === "direct" ? <UserPlus className="w-5 h-5" /> : <Users className="w-5 h-5" />}
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
-                  New Conversation
+                  {mode === "direct" ? "New Conversation" : "Create Group Chat"}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Select a user to start messaging
+                  {mode === "direct"
+                    ? "Select a user to start messaging"
+                    : "Enter group details and select members"}
                 </p>
               </div>
             </div>
@@ -114,8 +158,44 @@ export function NewChatModal({
             </button>
           </div>
 
-          {/* Search Input */}
-          <div className="p-4 shrink-0">
+          {/* Tab Switcher */}
+          <div className="flex border-b border-black/5 dark:border-white/5 p-1 bg-black/5 dark:bg-white/5">
+            <button
+              onClick={() => setMode("direct")}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+                mode === "direct"
+                  ? "bg-white dark:bg-[#1a1423] text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              Direct Message
+            </button>
+            <button
+              onClick={() => setMode("group")}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+                mode === "group"
+                  ? "bg-white dark:bg-[#1a1423] text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              Group Chat
+            </button>
+          </div>
+
+          {/* Inputs Section */}
+          <div className="p-4 shrink-0 space-y-3">
+            {mode === "group" && (
+              <div>
+                <input
+                  type="text"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Group Name..."
+                  className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-indigo-500/30 focus:bg-white/80 dark:focus:bg-black/60 rounded-2xl py-2.5 px-4 text-sm text-zinc-900 dark:text-white placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-inner"
+                />
+              </div>
+            )}
+
             <div className="relative group">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
@@ -155,6 +235,7 @@ export function NewChatModal({
               </div>
             ) : (
               filteredUsers.map((user) => {
+                const isSelected = selectedUserIds.includes(user.id);
                 const isCreating = creatingUserId === user.id;
 
                 return (
@@ -162,15 +243,28 @@ export function NewChatModal({
                     key={user.id}
                     whileHover={{ scale: 0.99 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => handleStartChat(user)}
+                    onClick={() => {
+                      if (mode === "group") {
+                        toggleSelectUser(user.id);
+                      } else {
+                        handleStartChat(user);
+                      }
+                    }}
                     disabled={creatingUserId !== null}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl transition-all text-left bg-white/40 dark:bg-white/5 hover:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border border-black/5 dark:border-white/5 hover:border-indigo-500/30 group"
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all text-left border group ${
+                      mode === "group" && isSelected
+                        ? "bg-indigo-500/15 border-indigo-500/40"
+                        : "bg-white/40 dark:bg-white/5 hover:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border-black/5 dark:border-white/5 hover:border-indigo-500/30"
+                    }`}
                   >
                     <div className="flex items-center space-x-3 min-w-0">
                       <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          user.username
-                        )}`}
+                        src={
+                          user.avatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            user.username
+                          )}`
+                        }
                         alt={user.username}
                         className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0"
                       />
@@ -185,7 +279,17 @@ export function NewChatModal({
                     </div>
 
                     <div className="shrink-0 ml-2">
-                      {isCreating ? (
+                      {mode === "group" ? (
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${
+                            isSelected
+                              ? "bg-indigo-500 border-indigo-500 text-white"
+                              : "border-zinc-300 dark:border-zinc-700 bg-transparent"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                        </div>
+                      ) : isCreating ? (
                         <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-indigo-500/10 group-hover:bg-indigo-500 text-indigo-600 group-hover:text-white flex items-center justify-center transition-all">
@@ -198,6 +302,26 @@ export function NewChatModal({
               })
             )}
           </div>
+
+          {/* Group Footer */}
+          {mode === "group" && (
+            <div className="p-4 border-t border-black/5 dark:border-white/5 shrink-0 bg-white/40 dark:bg-black/20">
+              <button
+                onClick={handleCreateGroup}
+                disabled={creatingGroup || !groupName.trim() || selectedUserIds.length === 0}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-2xl text-sm font-semibold transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                {creatingGroup ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Users className="w-4 h-4" />
+                    Create Group ({selectedUserIds.length} members)
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

@@ -25,7 +25,17 @@ export default function RootLayout({
           <AuthProvider>
               {children}
           </AuthProvider>
-          <Toaster richColors position="top-center" theme="system" />
+          <Toaster
+            richColors
+            position="top-center"
+            theme="system"
+            toastOptions={{
+              className: "!py-3.5 !px-5 !text-sm sm:!text-base sm:!min-w-[380px] sm:!max-w-[500px] !rounded-2xl !shadow-2xl !border !border-black/10 dark:!border-white/15",
+              style: {
+                minHeight: "56px",
+              },
+            }}
+          />
         </Providers>
       </body>
     </html>

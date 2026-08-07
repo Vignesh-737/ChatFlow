@@ -9,6 +9,7 @@ import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProfilePanel } from "@/components/chat/ProfilePanel";
 import { NewChatModal } from "@/components/chat/NewChatModal";
+import { SettingsModal } from "@/components/chat/SettingsModal";
 import { api } from "@/lib/api";
 import { socket } from "@/lib/socket";
 import { Conversation, MessageItem } from "@/types/conversation";
@@ -22,6 +23,9 @@ export default function ChatPage() {
   const [showProfile, setShowProfile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "groups">("all");
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +63,37 @@ export default function ChatPage() {
         newMessage.conversationId !== activeChatId
       ) {
         const senderName = newMessage.sender?.username || "Someone";
-        toast(`${senderName}: ${newMessage.content}`);
+        toast.custom((t) => (
+          <div
+            onClick={() => {
+              setActiveChatId(newMessage.conversationId || null);
+              toast.dismiss(t);
+            }}
+            className="flex items-center space-x-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl p-3.5 rounded-2xl shadow-2xl border border-indigo-500/20 cursor-pointer hover:scale-[1.02] transition-all max-w-sm w-full"
+          >
+            <div className="relative shrink-0">
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  senderName
+                )}`}
+                alt={senderName}
+                className="w-10 h-10 rounded-full object-cover shadow-sm border border-indigo-400/30"
+              />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-zinc-900" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">
+                  {senderName}
+                </p>
+                <span className="text-[10px] text-zinc-400">now</span>
+              </div>
+              <p className="text-xs text-zinc-700 dark:text-zinc-200 truncate mt-0.5 font-medium">
+                {newMessage.content}
+              </p>
+            </div>
+          </div>
+        ));
       }
 
       setConversations((prev) =>
@@ -173,7 +207,22 @@ export default function ChatPage() {
                 transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                 className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#05010d] z-50 md:hidden flex"
               >
-                <Sidebar expanded />
+                <Sidebar
+                  expanded
+                  activeTab={activeTab}
+                  onSelectTab={(tab) => {
+                    setActiveTab(tab);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  onOpenSettings={() => {
+                    setIsSettingsOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  onOpenGroupModal={() => {
+                    setIsNewChatOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                />
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/10 rounded-full text-zinc-900 dark:text-white"
@@ -187,7 +236,13 @@ export default function ChatPage() {
 
         {/* Left Navigation Sidebar */}
         <div className="hidden md:flex h-full shrink-0">
-          <Sidebar expanded/>
+          <Sidebar
+            expanded
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenGroupModal={() => setIsNewChatOpen(true)}
+          />
         </div>
 
         {/* Conversation List Sidebar */}
@@ -200,8 +255,10 @@ export default function ChatPage() {
             conversations={conversations}
             activeId={activeChatId}
             loading={loading}
+            activeTab={activeTab}
             onSelect={handleSelectChat}
             onOpenNewChat={() => setIsNewChatOpen(true)}
+            onOpenCreateGroup={() => setIsNewChatOpen(true)}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           />
         </div>
@@ -220,11 +277,37 @@ export default function ChatPage() {
         </div>
 
         {/* Right Profile Panel */}
-        {showProfile && activeUser && (
+        {showProfile && (activeUser || activeChat?.isGroup) && (
           <div className="hidden xl:flex w-[360px] shrink-0 h-full shadow-[-20px_0_40px_rgba(0,0,0,0.05)] dark:shadow-[-20px_0_40px_rgba(0,0,0,0.2)]">
             <ProfilePanel
               user={activeUser}
+              chat={activeChat}
+              isBlocked={Boolean(activeUser && blockedUserIds.includes(activeUser.id))}
               onClose={() => setShowProfile(false)}
+              onDeleteChat={async (chatId) => {
+                try {
+                  await api.delete(`/conversations/${chatId}`);
+                  setConversations((prev) => prev.filter((c) => c.id !== chatId));
+                  if (activeChatId === chatId) {
+                    setActiveChatId(null);
+                  }
+                  setShowProfile(false);
+                  toast.success("Chat deleted successfully");
+                } catch (err: any) {
+                  console.error(err);
+                  toast.error(err?.response?.data?.message || "Failed to delete chat");
+                }
+              }}
+              onBlockUser={async (userId, username) => {
+                setBlockedUserIds((prev) => [...prev, userId]);
+                setShowProfile(false);
+                toast.success(`User ${username} has been blocked`);
+              }}
+              onUnblockUser={async (userId, username) => {
+                setBlockedUserIds((prev) => prev.filter((id) => id !== userId));
+                setShowProfile(false);
+                toast.success(`User ${username} has been unblocked`);
+              }}
             />
           </div>
         )}
@@ -235,6 +318,12 @@ export default function ChatPage() {
         isOpen={isNewChatOpen}
         onClose={() => setIsNewChatOpen(false)}
         onSelectConversation={handleNewConversationCreated}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Loader2,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { Conversation, MessageItem } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
@@ -176,13 +177,19 @@ export function ChatWindow({
     }
   }, [messages, chat?.id, user?.id]);
 
-  useEffect(() => {
-    scrollToBottom("auto");
-  }, [chat?.id]);
+  // Instantly lock scroll position to bottom whenever messages load or change conversation
+  React.useLayoutEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [messages, chat?.id]);
 
+  // Smooth scroll to bottom on new incoming messages if already near bottom
   useEffect(() => {
-    if (!showScrollBottom) {
-      scrollToBottom("smooth");
+    if (!showScrollBottom && messages.length > 0) {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
     }
   }, [messages.length]);
 
@@ -374,7 +381,7 @@ export function ChatWindow({
     chat.members?.find((m) => m.user?.id !== user?.id)?.user ??
     chat.members?.[0]?.user;
 
-  if (!otherUser) return null;
+  if (!chat.isGroup && !otherUser) return null;
 
   const formatDateLabel = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -416,29 +423,40 @@ export function ChatWindow({
             className="flex items-center text-left hover:bg-black/5 dark:hover:bg-white/5 p-2 -ml-2 rounded-2xl transition-colors group"
           >
             <div className="relative shrink-0">
-              <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  chat.name || otherUser.username
-                )}`}
-                alt={otherUser.username}
-                className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
-              />
-              {otherUser.isOnline && (
+              {chat.isGroup ? (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-sm font-semibold">
+                  <Users className="w-6 h-6" />
+                </div>
+              ) : (
+                <img
+                  src={
+                    otherUser?.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      chat.name || otherUser?.username || "Chat"
+                    )}`
+                  }
+                  alt={otherUser?.username || "Avatar"}
+                  className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
+                />
+              )}
+              {!chat.isGroup && otherUser?.isOnline && (
                 <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1a1423] rounded-full" />
               )}
             </div>
-            <div className="ml-4 hidden sm:block">
-              <h3 className="font-semibold text-zinc-900 dark:text-white text-[15px]">
-                {chat.name || otherUser.username}
+            <div className="ml-3 sm:ml-4 min-w-0">
+              <h3 className="font-semibold text-zinc-900 dark:text-white text-[15px] truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
+                {chat.isGroup ? chat.name : (chat.name || otherUser?.username)}
               </h3>
               <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center space-x-1.5">
-                {otherUser.isOnline ? (
+                {chat.isGroup ? (
+                  <span>{chat.members?.length || 0} members</span>
+                ) : otherUser?.isOnline ? (
                   <>
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="text-green-600 dark:text-green-400">Online</span>
                   </>
                 ) : (
-                  <span>{formatLastSeen(otherUser.lastSeen)}</span>
+                  <span>{formatLastSeen(otherUser?.lastSeen)}</span>
                 )}
               </p>
             </div>
@@ -517,16 +535,19 @@ export function ChatWindow({
               return (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.3) }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15 }}
                   className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                 >
                   {!isOwnMessage && (
                     <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        msg.sender?.username || otherUser.username
-                      )}`}
+                       src={
+                        otherUser.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          chat.name || otherUser.username
+                        )}`
+                      }
                       alt="Avatar"
                       className="w-8 h-8 rounded-full object-cover mr-3 self-end mb-1 hidden sm:block shadow-sm shrink-0"
                     />

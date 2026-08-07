@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Plus, MessageSquare, Sparkles, Menu } from "lucide-react";
+import { Search, Plus, MessageSquare, Sparkles, Menu, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Conversation } from "@/types/conversation";
 import { useAuth } from "@/context/AuthContext";
@@ -10,8 +10,10 @@ interface ConversationListProps {
   conversations: Conversation[];
   activeId: string | null;
   loading?: boolean;
+  activeTab?: "all" | "groups";
   onSelect: (id: string) => void;
   onOpenNewChat: () => void;
+  onOpenCreateGroup?: () => void;
   onOpenMobileMenu?: () => void;
 }
 
@@ -19,14 +21,18 @@ export function ConversationList({
   conversations,
   activeId,
   loading = false,
+  activeTab = "all",
   onSelect,
   onOpenNewChat,
+  onOpenCreateGroup,
   onOpenMobileMenu,
 }: ConversationListProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredConversations = conversations.filter((chat) => {
+    if (activeTab === "groups" && !chat.isGroup) return false;
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     
@@ -68,24 +74,36 @@ export function ConversationList({
               </button>
             )}
             <h2 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
-              Messages
+              {activeTab === "groups" ? "Group Chats" : "Messages"}
             </h2>
-            {conversations.length > 0 && (
+            {filteredConversations.length > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                {conversations.length}
+                {filteredConversations.length}
               </span>
             )}
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onOpenNewChat}
-            className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center space-x-1.5 px-3.5 text-xs font-semibold"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Chat</span>
-          </motion.button>
+          {activeTab === "groups" ? (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenCreateGroup || onOpenNewChat}
+              className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25 transition-all flex items-center space-x-1.5 px-3.5 text-xs font-semibold"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Create Group</span>
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenNewChat}
+              className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center space-x-1.5 px-3.5 text-xs font-semibold"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Chat</span>
+            </motion.button>
+          )}
         </div>
 
         {/* Search Bar */}
@@ -187,13 +205,22 @@ export function ConversationList({
 
                   {/* Avatar */}
                   <div className="relative shrink-0">
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        chat.name || otherUser.username
-                      )}`}
-                      alt={otherUser.username}
-                      className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
-                    />
+                    {chat.isGroup ? (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-sm font-semibold">
+                        <Users className="w-6 h-6" />
+                      </div>
+                    ) : (
+                      <img
+                        src={
+                          otherUser?.avatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            chat.name || otherUser?.username || "Chat"
+                          )}`
+                        }
+                        alt={otherUser?.username || "Avatar"}
+                        className="w-12 h-12 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
+                      />
+                    )}
                   </div>
 
                   {/* Chat Info */}
@@ -216,6 +243,7 @@ export function ConversationList({
 
                     {(() => {
                       const isUnread =
+                        !isActive &&
                         lastMsg &&
                         !lastMsg.isRead &&
                         (lastMsg.senderId !== user?.id && lastMsg.sender?.id !== user?.id);
@@ -224,7 +252,7 @@ export function ConversationList({
                           className={`text-sm truncate ${
                             isUnread
                               ? "font-bold text-zinc-900 dark:text-zinc-100"
-                              : "text-zinc-500 dark:text-zinc-400"
+                              : "text-zinc-500 dark:text-zinc-400 font-normal"
                           }`}
                         >
                           {lastMsg?.content ? (
